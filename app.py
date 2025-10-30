@@ -55,21 +55,17 @@ def view_analysis(analysis_id):
 def generate_feature_analysis(df, feature, target_feature):
     stats = df[feature].describe().to_dict()
     
-    # Create figure with subplots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
     
-    # Plot histogram
     sns.histplot(data=df, x=feature, ax=ax1)
     ax1.set_title(f'Distribution of {feature}')
     
-    # Calculate correlation and create scatter plot
     correlation = None
     if pd.api.types.is_numeric_dtype(df[feature]) and pd.api.types.is_numeric_dtype(df[target_feature]):
         correlation = df[feature].corr(df[target_feature])
         sns.scatterplot(data=df, x=feature, y=target_feature, ax=ax2)
         ax2.set_title(f'{feature} vs {target_feature} (correlation: {correlation:.2f})')
     
-    # Save plot to bytes buffer
     buf = io.BytesIO()
     plt.savefig(buf, format='png', bbox_inches='tight')
     plt.close(fig)
