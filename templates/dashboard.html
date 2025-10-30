@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <h1 class="h2">Dashboard de Análises</h1>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <a href="{{ url_for('create_analysis') }}" class="text-decoration-none">
+            <div class="card new-analysis-card h-100">
+                <div class="card-body text-center d-flex align-items-center justify-content-center">
+                    <div>
+                        <div class="display-1 mb-3 gold-accent">+</div>
+                        <h5 class="card-title text-purple">Criar Nova Análise</h5>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    {% for analysis in analyses %}
+    <div class="col-md-4">
+        <div class="card analysis-card h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ analysis.name }}</h5>
+                <p class="card-text text-muted">
+                   Criado em {{ analysis.creation_date.strftime('%Y-%m-%d %H:%M') }}
+                </p>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('view_analysis', analysis_id=analysis.id) }}" 
+                       class="btn btn-outline-primary">Ver Análise</a>
+                    <form action="{{ url_for('delete_analysis', analysis_id=analysis.id) }}" method="POST" 
+                          onsubmit="return confirm('Tem certeza de que deseja excluir esta análise?');">
+                        <button type="submit" class="btn btn-outline-danger">Excluir</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

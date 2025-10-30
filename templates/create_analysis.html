@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-4">
+        <h1 class="h2">Criar Nova Análise</h1>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form id="upload-form" method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nome da Análise</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Upload do Conjunto de Dados (CSV ou XLS)</label>
+                        <input type="file" class="form-control" id="file" name="file" 
+                               accept=".csv,.xls,.xlsx" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="target_feature" class="form-label">Feature Alvo</label>
+                        <input type="text" class="form-control" id="target_feature" 
+                               name="target_feature" required>
+                        <div class="form-text">Digite o nome da coluna a ser prevista</div>
+                    </div>
+
+                    <div class="progress mb-3">
+                        <div class="progress-bar" role="progressbar" style="width: 0%" 
+                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Criar Análise</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay position-fixed top-0 start-0 w-100 h-100" 
+     style="display: none;">
+    <div class="d-flex flex-column align-items-center justify-content-center h-100">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
+        <h5>Processando Conjunto de Dados...</h5>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    handleFileUpload();
+});
+</script>
+{% endblock %}

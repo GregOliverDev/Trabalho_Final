@@ -1,0 +1,87 @@
+:root {
+    --purple-primary: #6B46C1;
+    --white-bg: #FFFFFF;
+    --gold-accent: #B7791F;
+}
+
+body {
+    background-color: var(--white-bg);
+    font-family: 'Inter', sans-serif;
+}
+
+.navbar {
+    background-color: var(--purple-primary);
+}
+
+.card {
+    border: 1px solid rgba(107, 70, 193, 0.1);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 6px rgba(107, 70, 193, 0.1);
+}
+
+.btn-primary {
+    background-color: var(--purple-primary);
+    border-color: var(--purple-primary);
+}
+
+.btn-primary:hover {
+    background-color: #553C9A;
+    border-color: #553C9A;
+}
+
+.btn-outline-primary {
+    color: var(--purple-primary);
+    border-color: var(--purple-primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--purple-primary);
+    color: var(--white-bg);
+}
+
+.gold-accent {
+    color: var(--gold-accent);
+}
+
+.border-gold {
+    border-color: var(--gold-accent) !important;
+}
+
+.progress-bar {
+    background-color: var(--purple-primary);
+}
+
+.feature-select:focus {
+    border-color: var(--purple-primary);
+    box-shadow: 0 0 0 0.2rem rgba(107, 70, 193, 0.25);
+}
+
+.analysis-card {
+    border-left: 4px solid var(--purple-primary);
+}
+
+.new-analysis-card {
+    border: 2px dashed var(--purple-primary);
+    background-color: rgba(107, 70, 193, 0.05);
+}
+
+.stat-card {
+    border-top: 3px solid var(--gold-accent);
+}
+
+.chart-container {
+    border: 1px solid rgba(107, 70, 193, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    min-height: 400px;
+    background-color: white;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.loading-overlay {
+    background-color: rgba(255, 255, 255, 0.9);
+}

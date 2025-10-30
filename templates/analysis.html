@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h2">{{ analysis.name }}</h1>
+        <p class="text-muted">Criado em {{ analysis.creation_date.strftime('%Y-%m-%d %H:%M') }}</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <h5 class="card-title">Visão Geral do Conjunto de Dados</h5>
+                <p>Total de Registros: {{ stats.total_records }}</p>
+                <p>Total de Features: {{ stats.total_features }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card stat-card">
+            <div class="card-body">
+                <h5 class="card-title">Análise de Features</h5>
+                <form method="get" action="{{ url_for('view_analysis', analysis_id=analysis.id) }}">
+                    <select class="form-select feature-select" name="feature" onchange="this.form.submit()">
+                        <option value="">Selecione uma feature</option>
+                        {% for column in stats.columns %}
+                        <option value="{{ column }}" {% if request.args.get('feature') == column %}selected{% endif %}>
+                            {{ column }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-2">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Estatísticas</h5>
+                {% if feature_stats %}
+                <div class="feature-stats">
+                    <p>Count: {{ feature_stats.stats.count }}</p>
+                    <p>Mean: {{ "%.2f"|format(feature_stats.stats.mean) if feature_stats.stats.mean else 'N/A' }}</p>
+                    <p>Std: {{ "%.2f"|format(feature_stats.stats.std) if feature_stats.stats.std else 'N/A' }}</p>
+                    <p>Min: {{ "%.2f"|format(feature_stats.stats['min']) if feature_stats.stats['min'] else 'N/A' }}</p>
+                    <p>25%: {{ "%.2f"|format(feature_stats.stats['25%']) if feature_stats.stats['25%'] else 'N/A' }}</p>
+                    <p>50%: {{ "%.2f"|format(feature_stats.stats['50%']) if feature_stats.stats['50%'] else 'N/A' }}</p>
+                    <p>75%: {{ "%.2f"|format(feature_stats.stats['75%']) if feature_stats.stats['75%'] else 'N/A' }}</p>
+                    <p>Max: {{ "%.2f"|format(feature_stats.stats['max']) if feature_stats.stats['max'] else 'N/A' }}</p>
+                    {% if feature_stats.correlation is not none %}
+                    <p>Correlation with target: {{ "%.4f"|format(feature_stats.correlation) }}</p>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-muted">Selecione uma feature para ver as estatísticas</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Distribuição</h5>
+                {% if feature_stats %}
+                <img src="data:image/png;base64,{{ feature_stats.plot|b64encode }}" class="img-fluid" alt="Feature Analysis Plots">
+                {% else %}
+                <p class="text-muted">Selecione uma feature para ver os gráficos</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4 mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Machine Learning análise</h5>
+                <form action="{{ url_for('train_model', analysis_id=analysis.id) }}">
+                    <button type="submit" class="btn btn-primary mb-4">Train Model</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

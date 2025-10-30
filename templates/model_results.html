@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h2">Resultados do Modelo</h1>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Métricas do Modelo</h5>
+                <p>Accuracy: {{ "%.2f"|format(metrics.accuracy * 100) }}%</p>
+                <p>Precision: {{ "%.2f"|format(metrics.precision * 100) }}%</p>
+                <p>Recall: {{ "%.2f"|format(metrics.recall * 100) }}%</p>
+                <p>F1 Score: {{ "%.2f"|format(metrics.f1 * 100) }}%</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Importância das Features</h5>
+                <img src="data:image/png;base64,{{ plot|b64encode }}" class="img-fluid" alt="Feature Importance Plot">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
