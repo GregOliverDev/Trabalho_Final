@@ -1,12 +1,38 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row mb-2">
-    <div class="col-12">
-        <h1 class="h2">{{ analysis.name }}</h1>
-        <p class="text-muted">Criado em {{ analysis.creation_date.strftime('%Y-%m-%d %H:%M') }}</p>
+<div class="row mb-3 align-items-center">
+    <!-- Título e data -->
+    <div class="col-md-8 col-12">
+        <h1 class="h2 mb-1">{{ analysis.name }}</h1>
+        <p class="text-muted mb-0">
+            Criado em {{ analysis.creation_date.strftime('%Y-%m-%d %H:%M') }}
+        </p>
+    </div>
+
+    <!-- Formulário de upload -->
+    <div class="col-md-4 col-12 mt-3 mt-md-0">
+        <form method="post"
+              action="{{ url_for('append_data', analysis_id=analysis.id) }}"
+              enctype="multipart/form-data"
+              class="d-flex flex-wrap justify-content-md-end align-items-center gap-2">
+            
+            <div class="flex-grow-1 flex-md-grow-0">
+                <input type="file"
+                       name="file"
+                       accept=".csv"
+                       class="form-control form-control-sm"
+                       required>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-upload me-1"></i> Inserir Novos Dados
+            </button>
+        </form>
     </div>
 </div>
+
+
 
 <div class="row g-4">
     <div class="col-12">

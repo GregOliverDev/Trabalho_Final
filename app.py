@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file
+from flask import Flask, render_template, request, redirect, url_for, send_file, flash
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -17,6 +17,9 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///analysis.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
+# Secret key is required for session-based features like flash messaging.
+# In production, set the SECRET_KEY environment variable to a secure value.
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')
 
 db.init_app(app)
 
@@ -158,6 +161,47 @@ def train_model(analysis_id):
     buf.seek(0)
     
     return render_template('model_results.html', metrics=metrics, plot=buf)
+
+
+@app.route('/analysis/<int:analysis_id>/append', methods=['POST'])
+def append_data(analysis_id):
+    analysis = Analysis.query.get_or_404(analysis_id)
+
+    if 'file' not in request.files:
+        flash('Nenhum arquivo enviado', 'warning')
+        return redirect(url_for('view_analysis', analysis_id=analysis.id))
+
+    file = request.files['file']
+    if file.filename == '':
+        flash('Nenhum arquivo selecionado', 'warning')
+        return redirect(url_for('view_analysis', analysis_id=analysis.id))
+
+    try:
+        # Read existing and new CSVs
+        df_existing = pd.read_csv(analysis.file_path)
+        # read_csv can accept file-like object
+        new_df = pd.read_csv(file)
+    except Exception as e:
+        flash(f'Erro ao ler o arquivo CSV: {e}', 'warning')
+        return redirect(url_for('view_analysis', analysis_id=analysis.id))
+
+    # Validate columns (names must match, order may differ)
+    if set(df_existing.columns) != set(new_df.columns):
+        flash('dataset com colunas diferentes das usadas na criação da analise', 'warning')
+        return redirect(url_for('view_analysis', analysis_id=analysis.id))
+
+    # Reorder new_df to match existing columns to avoid misalignment
+    new_df = new_df[df_existing.columns]
+
+    try:
+        # Append rows to the existing CSV without writing header
+        new_df.to_csv(analysis.file_path, mode='a', header=False, index=False)
+    except Exception as e:
+        flash(f'Erro ao salvar os dados: {e}', 'warning')
+        return redirect(url_for('view_analysis', analysis_id=analysis.id))
+
+    flash('Dados inseridos com sucesso', 'success')
+    return redirect(url_for('view_analysis', analysis_id=analysis.id))
 
 if __name__ == '__main__':
     app.run(debug=True)
