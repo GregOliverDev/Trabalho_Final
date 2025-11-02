@@ -109,9 +109,93 @@
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Machine Learning</h5>
-                <form action="{{ url_for('train_model', analysis_id=analysis.id) }}">
-                    <button type="submit" class="btn btn-primary mb-4">Treinar Modelo</button>
+
+                <!-- Formulário de seleção de classificador / hiperparâmetros (GET) -->
+                <form action="{{ url_for('train_model', analysis_id=analysis.id) }}" method="get" class="row g-2">
+                    <div class="col-md-4">
+                        <label class="form-label">Classificador</label>
+                        <select name="classifier" id="classifier-select" class="form-select">
+                            <option value="random_forest" {% if request.args.get('classifier', 'random_forest') == 'random_forest' %}selected{% endif %}>Random Forest</option>
+                            <option value="decision_tree" {% if request.args.get('classifier') == 'decision_tree' %}selected{% endif %}>Decision Tree</option>
+                            <option value="knn" {% if request.args.get('classifier') == 'knn' %}selected{% endif %}>K-Nearest Neighbors (KNN)</option>
+                            <option value="logistic_regression" {% if request.args.get('classifier') == 'logistic_regression' %}selected{% endif %}>Logistic Regression</option>
+                            <option value="svm" {% if request.args.get('classifier') == 'svm' %}selected{% endif %}>SVM</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2 param-group param-rf">
+                        <label class="form-label small">n_estimators</label>
+                        <input type="number" name="n_estimators" min="1" class="form-control" value="{{ request.args.get('n_estimators', 100) }}">
+                    </div>
+
+                    <div class="col-md-2 param-group param-rf param-dt">
+                        <label class="form-label small">max_depth</label>
+                        <input type="text" name="max_depth" class="form-control" placeholder="None" value="{{ request.args.get('max_depth', '') }}">
+                    </div>
+
+                    <div class="col-md-2 param-group param-knn">
+                        <label class="form-label small">n_neighbors</label>
+                        <input type="number" name="n_neighbors" min="1" class="form-control" value="{{ request.args.get('n_neighbors', 5) }}">
+                    </div>
+
+                    <div class="col-md-2 param-group param-lr param-svm">
+                        <label class="form-label small">C</label>
+                        <input type="text" name="C" class="form-control" value="{{ request.args.get('C', 1.0) }}">
+                    </div>
+
+                    <div class="col-md-2 param-group param-lr">
+                        <label class="form-label small">max_iter</label>
+                        <input type="number" name="max_iter" min="1" class="form-control" value="{{ request.args.get('max_iter', 100) }}">
+                    </div>
+
+                    <div class="col-md-3 param-group param-svm">
+                        <label class="form-label small">kernel (svm)</label>
+                        <input type="text" name="kernel" class="form-control" value="{{ request.args.get('kernel', 'rbf') }}">
+                    </div>
+
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Treinar Modelo</button>
+                        <small class="text-muted ms-2">Os parâmetros são opcionais — deixe em branco para usar valores padrão.</small>
+                    </div>
                 </form>
+
+                <script>
+                    (function(){
+                        const select = document.getElementById('classifier-select');
+                        const groups = {
+                            rf: document.querySelectorAll('.param-rf'),
+                            dt: document.querySelectorAll('.param-dt'),
+                            knn: document.querySelectorAll('.param-knn'),
+                            lr: document.querySelectorAll('.param-lr'),
+                            svm: document.querySelectorAll('.param-svm')
+                        };
+
+                        function updateVisibility() {
+                            const val = select.value;
+                            // hide all
+                            Object.values(groups).forEach(nlist => nlist.forEach(el => el.style.display = 'none'));
+                            // show relevant
+                            if (val === 'random_forest') {
+                                groups.rf.forEach(el => el.style.display = '');
+                            } else if (val === 'decision_tree') {
+                                groups.dt.forEach(el => el.style.display = '');
+                                // also show max_depth input which overlaps rf/dt in markup
+                                document.querySelectorAll('.param-dt').forEach(el => el.style.display = '');
+                            } else if (val === 'knn') {
+                                groups.knn.forEach(el => el.style.display = '');
+                            } else if (val === 'logistic_regression') {
+                                groups.lr.forEach(el => el.style.display = '');
+                            } else if (val === 'svm') {
+                                groups.svm.forEach(el => el.style.display = '');
+                            }
+                        }
+
+                        select.addEventListener('change', updateVisibility);
+                        // initial update
+                        updateVisibility();
+                    })();
+                </script>
+
             </div>
         </div>
     </div>
