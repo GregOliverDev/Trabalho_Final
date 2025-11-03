@@ -42,7 +42,7 @@ Rotas principais
 - GET /analysis/<id> — página de análise; query param `feature` para análise de feature
 - GET,POST /analysis/create — criar nova análise (upload CSV; campo target_feature)
 - POST /analysis/delete/<id> — apagar análise
-- POST /analysis/<id>/append — anexar CSV (mesmas colunas)
+- POST /analysis/create — anexar CSV (mesmas colunas)
 - GET /train_model/<id> — treinar modelo (query params para escolher classificador e hiperparâmetros)
 
 Formato esperado do CSV
