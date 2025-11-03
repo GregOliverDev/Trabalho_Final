@@ -65,22 +65,48 @@
     </div>
 </div>
 <div class="row g-4 mt-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Distribuição</h5>
+                {% if feature_stats %}
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2">Distribuição (Histograma / Scatter)</h6>
+                                <a class="chart-link" href="data:image/png;base64,{{ feature_stats.images.dist_scatter_png|b64encode }}" target="_blank" rel="noopener noreferrer">
+                                    <img src="data:image/png;base64,{{ feature_stats.images.dist_scatter_png|b64encode }}" class="chart-thumb img-fluid" alt="Distribution and Scatter">
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">Selecione uma feature para ver os gráficos</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-3">
     <div class="col-md-4">
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Estatísticas</h5>
                 {% if feature_stats %}
                 <div class="feature-stats">
-                    <p>Count: {{ feature_stats.stats.count }}</p>
-                    <p>Mean: {{ "%.2f"|format(feature_stats.stats.mean) if feature_stats.stats.mean else 'N/A' }}</p>
-                    <p>Std: {{ "%.2f"|format(feature_stats.stats.std) if feature_stats.stats.std else 'N/A' }}</p>
-                    <p>Min: {{ "%.2f"|format(feature_stats.stats['min']) if feature_stats.stats['min'] else 'N/A' }}</p>
+                    <p>Contagem: {{ feature_stats.stats.count }}</p>
+                    <p>Média: {{ "%.2f"|format(feature_stats.stats.mean) if feature_stats.stats.mean else 'N/A' }}</p>
+                    <p>Desvio Padrão: {{ "%.2f"|format(feature_stats.stats.std) if feature_stats.stats.std else 'N/A' }}</p>
+                    <p>Mínimo: {{ "%.2f"|format(feature_stats.stats['min']) if feature_stats.stats['min'] else 'N/A' }}</p>
                     <p>25%: {{ "%.2f"|format(feature_stats.stats['25%']) if feature_stats.stats['25%'] else 'N/A' }}</p>
-                    <p>50%: {{ "%.2f"|format(feature_stats.stats['50%']) if feature_stats.stats['50%'] else 'N/A' }}</p>
+                    <p>50% (mediana): {{ "%.2f"|format(feature_stats.stats['50%']) if feature_stats.stats['50%'] else 'N/A' }}</p>
                     <p>75%: {{ "%.2f"|format(feature_stats.stats['75%']) if feature_stats.stats['75%'] else 'N/A' }}</p>
-                    <p>Max: {{ "%.2f"|format(feature_stats.stats['max']) if feature_stats.stats['max'] else 'N/A' }}</p>
+                    <p>Máx: {{ "%.2f"|format(feature_stats.stats['max']) if feature_stats.stats['max'] else 'N/A' }}</p>
                     {% if feature_stats.correlation is not none %}
-                    <p>Correlation with target: {{ "%.4f"|format(feature_stats.correlation) }}</p>
+                    <p>Correlação com o alvo: {{ "%.4f"|format(feature_stats.correlation) }}</p>
                     {% endif %}
                 </div>
                 {% else %}
@@ -93,11 +119,11 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Distribuição</h5>
-                {% if feature_stats %}
-                <img src="data:image/png;base64,{{ feature_stats.plot|b64encode }}" class="img-fluid" alt="Feature Analysis Plots">
+                <h5 class="card-title">Interativo</h5>
+                {% if feature_stats and feature_stats.interactive_html %}
+                <div class="plotly-embed">{{ feature_stats.interactive_html|safe }}</div>
                 {% else %}
-                <p class="text-muted">Selecione uma feature para ver os gráficos</p>
+                <p class="text-muted">Selecione uma feature para ver o gráfico interativo</p>
                 {% endif %}
             </div>
         </div>

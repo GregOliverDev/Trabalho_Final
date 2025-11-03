@@ -85,3 +85,23 @@ body {
 .loading-overlay {
     background-color: rgba(255, 255, 255, 0.9);
 }
+
+/* Larger, clickable chart thumbnails */
+.chart-thumb {
+    width: 100%;
+    max-height: 700px; /* taller to accommodate bigger plots */
+    object-fit: contain;
+    cursor: zoom-in;
+    transition: transform 0.15s ease-in-out;
+}
+.chart-thumb:hover {
+    transform: scale(1.02);
+}
+.chart-link {
+    display: block;
+    text-align: center;
+}
+.plotly-embed {
+    width: 100%;
+    overflow: auto;
+}
