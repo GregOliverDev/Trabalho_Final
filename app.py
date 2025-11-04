@@ -54,13 +54,17 @@ def dashboard():
 @app.route('/analysis/<int:analysis_id>')
 def view_analysis(analysis_id):
     analysis = Analysis.query.get_or_404(analysis_id)
-    df = pd.read_csv(analysis.file_path)
+    df = pd.read_csv(analysis.file_path) # # Carrega CSV
     
     stats = {
         'total_records': len(df),
         'total_features': len(df.columns),
         'columns': df.columns.tolist()
     }
+    
+    # CHAMA AS DUAS FUNÇÕES
+    heatmap_plot, correlation_matrix = generate_correlation_heatmap(df)
+    target_correlations = generate_target_correlations(correlation_matrix, analysis.target_feature)
     
     if request.args.get('feature'):
         feature = request.args.get('feature')
@@ -74,9 +78,9 @@ def view_analysis(analysis_id):
                          feature_stats['images'].get('bar_png') is None)
         except Exception:
             logging.exception('Failed to log feature image presence')
-        return render_template('analysis.html', analysis=analysis, stats=stats, feature_stats=feature_stats)
+        return render_template('analysis.html', analysis=analysis, stats=stats, feature_stats=feature_stats, heatmap_plot=heatmap_plot, target_correlations=target_correlations)
     
-    return render_template('analysis.html', analysis=analysis, stats=stats)
+    return render_template('analysis.html', analysis=analysis, stats=stats, heatmap_plot=heatmap_plot, target_correlations=target_correlations)
 
 
 def generate_feature_analysis(df, feature, target_feature):
@@ -157,6 +161,59 @@ def generate_feature_analysis(df, feature, target_feature):
         'images': images,
         'interactive_html': interactive_html
     }
+
+
+# HEATMAP
+def generate_correlation_heatmap(df):
+    try:
+        # Filtra apenas colunas numéricas
+        numeric_df = df.select_dtypes(include=['number'])
+        
+        if numeric_df.empty or len(numeric_df.columns) < 2:
+            return None, None
+            
+        # Calcula matriz de correlação
+        correlation_matrix = numeric_df.corr()
+        
+        # Create heatmap
+        plt.figure(figsize=(12, 10))
+        sns.heatmap(correlation_matrix, 
+                   annot=True, 
+                   cmap='coolwarm', 
+                   center=0,
+                   square=True,
+                   fmt='.2f',
+                   cbar_kws={'shrink': 0.8})
+        plt.title('Mapa de Correlação entre Features Numéricas')
+        plt.tight_layout()
+        
+        # Salva em buffer (memória) como PNG
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', dpi=120)
+        plt.close()
+        buf.seek(0)
+        
+        return buf, correlation_matrix # Retorna: (imagem_buffer, matriz_correlação)
+    except Exception as e:
+        logging.error(f"Error generating correlation heatmap: {e}")
+        return None, None
+
+
+def generate_target_correlations(correlation_matrix, target_feature):
+    try:
+        if correlation_matrix is None or target_feature not in correlation_matrix.columns:
+            return None
+            
+        # Extrai apenas correlações com a variável target (ex: 'quality')
+        target_correlations = correlation_matrix[target_feature]
+        
+        # Ordena em ordem decrescente (maior para menor correlação)
+        sorted_correlations = target_correlations.sort_values(ascending=False)
+        
+        return sorted_correlations # Retorna as correlações ordenadas
+    except Exception as e:
+        logging.error(f"Error generating target correlations: {e}")
+        return None
 
 
 @app.route('/analysis/delete/<int:analysis_id>', methods=['POST'])

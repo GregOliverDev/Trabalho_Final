@@ -61,6 +61,46 @@
         </div>
     </div>
 </div>
+
+<div class="row g-4 mt-3">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Estatísticas</h5>
+                {% if feature_stats %}
+                <div class="feature-stats">
+                    <p>Contagem: {{ feature_stats.stats.count }}</p>
+                    <p>Média: {{ "%.2f"|format(feature_stats.stats.mean) if feature_stats.stats.mean else 'N/A' }}</p>
+                    <p>Desvio Padrão: {{ "%.2f"|format(feature_stats.stats.std) if feature_stats.stats.std else 'N/A' }}</p>
+                    <p>Mínimo: {{ "%.2f"|format(feature_stats.stats['min']) if feature_stats.stats['min'] else 'N/A' }}</p>
+                    <p>25%: {{ "%.2f"|format(feature_stats.stats['25%']) if feature_stats.stats['25%'] else 'N/A' }}</p>
+                    <p>50% (mediana): {{ "%.2f"|format(feature_stats.stats['50%']) if feature_stats.stats['50%'] else 'N/A' }}</p>
+                    <p>75%: {{ "%.2f"|format(feature_stats.stats['75%']) if feature_stats.stats['75%'] else 'N/A' }}</p>
+                    <p>Máx: {{ "%.2f"|format(feature_stats.stats['max']) if feature_stats.stats['max'] else 'N/A' }}</p>
+                    {% if feature_stats.correlation is not none %}
+                    <p>Correlação com o alvo: {{ "%.4f"|format(feature_stats.correlation) }}</p>
+                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-muted">Selecione uma feature para ver as estatísticas</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Interativo</h5>
+                {% if feature_stats and feature_stats.interactive_html %}
+                <div class="plotly-embed">{{ feature_stats.interactive_html|safe }}</div>
+                {% else %}
+                <p class="text-muted">Selecione uma feature para ver o gráfico interativo</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row g-4 mt-2">
     <div class="col-12">
         <div class="card">
@@ -113,50 +153,74 @@
     </div>
 </div>
 
-<div class="row g-4 mt-3">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Estatísticas</h5>
-                {% if feature_stats %}
-                <div class="feature-stats">
-                    <p>Contagem: {{ feature_stats.stats.count }}</p>
-                    <p>Média: {{ "%.2f"|format(feature_stats.stats.mean) if feature_stats.stats.mean else 'N/A' }}</p>
-                    <p>Desvio Padrão: {{ "%.2f"|format(feature_stats.stats.std) if feature_stats.stats.std else 'N/A' }}</p>
-                    <p>Mínimo: {{ "%.2f"|format(feature_stats.stats['min']) if feature_stats.stats['min'] else 'N/A' }}</p>
-                    <p>25%: {{ "%.2f"|format(feature_stats.stats['25%']) if feature_stats.stats['25%'] else 'N/A' }}</p>
-                    <p>50% (mediana): {{ "%.2f"|format(feature_stats.stats['50%']) if feature_stats.stats['50%'] else 'N/A' }}</p>
-                    <p>75%: {{ "%.2f"|format(feature_stats.stats['75%']) if feature_stats.stats['75%'] else 'N/A' }}</p>
-                    <p>Máx: {{ "%.2f"|format(feature_stats.stats['max']) if feature_stats.stats['max'] else 'N/A' }}</p>
-                    {% if feature_stats.correlation is not none %}
-                    <p>Correlação com o alvo: {{ "%.4f"|format(feature_stats.correlation) }}</p>
-                    {% endif %}
-                </div>
-                {% else %}
-                <p class="text-muted">Selecione uma feature para ver as estatísticas</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
 
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Interativo</h5>
-                {% if feature_stats and feature_stats.interactive_html %}
-                <div class="plotly-embed">{{ feature_stats.interactive_html|safe }}</div>
-                {% else %}
-                <p class="text-muted">Selecione uma feature para ver o gráfico interativo</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
+
+
 <div class="row g-4 mt-2">
     <div class="col-12">
         <div class="card stat-card">
             <div class="card-body">
                 <h5 class="card-title">Análises Gerais</h5>
+                <div class="row">
+                    <!-- Tabela de Correlações com Target -->
+                    <div class="col-md-6">
+                        <h6 class="card-subtitle mb-3">Correlações com {{ analysis.target_feature }}</h6>
+                        {% if target_correlations is not none %}
+                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                <table class="table table-sm table-hover">
+                                    <thead class="table-dark sticky-top">
+                                        <tr>
+                                            <th>Feature</th>
+                                            <th>Correlação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for feature, correlation in target_correlations.items() %}
+                                        <tr>
+                                            <td>{{ feature }}</td>
+                                            <td>
+                                                <span class="badge {% if correlation > 0.5 %}bg-success{% elif correlation > 0.2 %}bg-danger{% elif correlation < -0.2 %}bg-primary{% elif correlation < -0.5 %}bg-dark{% else %}bg-secondary{% endif %}">
+                                                    {{ "%.6f"|format(correlation) }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="text-muted mt-2 small">
+                                <strong>Cores:</strong> 
+                                <span class="badge bg-success">Verde > 0.5</span>
+                                <span class="badge bg-danger">Vermelho > 0.2</span>
+                                <span class="badge bg-secondary">Cinza ≈ 0</span>
+                                <span class="badge bg-primary">Azul < -0.2</span>
+                                <span class="badge bg-dark">Preto < -0.5</span>
+                            </p>
+                        {% else %}
+                            <p class="text-muted">Não foi possível calcular as correlações com a variável target.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Mapa de Correlação HEATMAP -->
+                    <div class="col-md-6">
+                        <h6 class="card-subtitle mb-3">Mapa de Correlação HEATMAP</h6>
+                        {% if heatmap_plot %}
+                            <div class="text-center">
+                                <img src="data:image/png;base64,{{ heatmap_plot|b64encode }}" 
+                                     class="img-fluid" 
+                                     alt="Correlation Heatmap"
+                                     style="max-height: 500px;">
+                            </div>
+                            <p class="text-muted mt-2 small">
+                                <strong>Interpretação:</strong> Valores próximos a 1 (vermelho) indicam correlação positiva forte, 
+                                valores próximos a -1 (azul) indicam correlação negativa forte, e valores próximos a 0 (branco) 
+                                indicam pouca ou nenhuma correlação linear.
+                            </p>
+                        {% else %}
+                            <p class="text-muted">Não foi possível gerar o mapa de correlação. Verifique se o dataset possui features numéricas suficientes.</p>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
