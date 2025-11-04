@@ -53,23 +53,24 @@ def dashboard():
 
 @app.route('/analysis/<int:analysis_id>')
 def view_analysis(analysis_id):
-    analysis = Analysis.query.get_or_404(analysis_id)
-    df = pd.read_csv(analysis.file_path) # # Carrega CSV
+    analysis = Analysis.query.get_or_404(analysis_id) # Busca análise no DB
+    df = pd.read_csv(analysis.file_path) # Carrega CSV
     
     stats = {
-        'total_records': len(df),
+        'total_records': len(df), # linhas
         'total_features': len(df.columns),
         'columns': df.columns.tolist()
     }
     
-    # CHAMA AS DUAS FUNÇÕES
+    # CHAMA AS DUAS FUNÇÕES, heatmap e correlacao
     heatmap_plot, correlation_matrix = generate_correlation_heatmap(df)
     target_correlations = generate_target_correlations(correlation_matrix, analysis.target_feature)
     
     if request.args.get('feature'):
         feature = request.args.get('feature')
         feature_stats = generate_feature_analysis(df, feature, analysis.target_feature)
-        # Log which images were generated (useful for debugging missing thumbnails)
+        
+        # Log p debug
         try:
             logging.info("feature=%s images keys=%s pie_none=%s bar_none=%s",
                          feature,
@@ -78,36 +79,45 @@ def view_analysis(analysis_id):
                          feature_stats['images'].get('bar_png') is None)
         except Exception:
             logging.exception('Failed to log feature image presence')
+            
+        # Retorna template COM análise específica da feature
         return render_template('analysis.html', analysis=analysis, stats=stats, feature_stats=feature_stats, heatmap_plot=heatmap_plot, target_correlations=target_correlations)
     
+    # Se NÃO há parâmetro feature, mostra só estatísticas gerais
     return render_template('analysis.html', analysis=analysis, stats=stats, heatmap_plot=heatmap_plot, target_correlations=target_correlations)
 
 
+# Gera análise completa de uma feature do dataset.
 def generate_feature_analysis(df, feature, target_feature):
-    stats = df[feature].describe().to_dict()
+    stats = df[feature].describe().to_dict() # # Calcula count..
     correlation = None
     images = {}
 
-    # Matplotlib histogram + scatter (if numeric)
-    # larger, higher-resolution distribution + scatter
+    # histograma e scatter
+    # Cria figura com 2 subplots lado a lado (1 linha, 2 colunas)
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6))
+    
+    # HISTOGRAMA: mostra distribuição da feature
     sns.histplot(data=df, x=feature, ax=ax1)
     ax1.set_title(f'Distribution of {feature}')
 
+    # SCATTER PLOT, relação entre feature e target
     if pd.api.types.is_numeric_dtype(df[feature]) and pd.api.types.is_numeric_dtype(df[target_feature]):
+        # Calcula correlação de entre feature e target
         correlation = df[feature].corr(df[target_feature])
         sns.scatterplot(data=df, x=feature, y=target_feature, ax=ax2)
         ax2.set_title(f'{feature} vs {target_feature} (correlation: {correlation:.2f})')
     else:
         ax2.axis('off')
 
+    # Salva a figura em buffer de memória
     buf = io.BytesIO()
     plt.savefig(buf, format='png', bbox_inches='tight', dpi=120)
     plt.close(fig)
     buf.seek(0)
     images['dist_scatter_png'] = buf
 
-    # Pie chart for categorical distributions (or top categories of numeric binned)
+    # GRÁFICO PIZZA: distribuição por categorias
     try:
         if pd.api.types.is_numeric_dtype(df[feature]):
             # bin numeric into categories for pie
@@ -115,10 +125,13 @@ def generate_feature_analysis(df, feature, target_feature):
         else:
             series_for_pie = df[feature].astype(str)
 
+        # Pega as 8 categorias mais frequentes
         pie_counts = series_for_pie.value_counts().nlargest(8)
+        # Cria gráfico de pizza
         fig2, axp = plt.subplots(figsize=(8, 8))
         axp.pie(pie_counts.values, labels=pie_counts.index.astype(str), autopct='%1.1f%%', startangle=90)
         axp.set_title(f'{feature} distribution')
+        
         buf2 = io.BytesIO()
         plt.savefig(buf2, format='png', bbox_inches='tight', dpi=120)
         plt.close(fig2)
@@ -127,9 +140,12 @@ def generate_feature_analysis(df, feature, target_feature):
     except Exception:
         images['pie_png'] = None
 
-    # Bar chart (value counts) - top categories
+    # GRÁFICO DE BARRAS: top valores mais frequentes
     try:
+        # Conta frequência de cada valor e pega os 10 mais comuns
         bar_counts = df[feature].value_counts().nlargest(10)
+        
+        # Cria gráfico de barras horizonta
         fig3, axb = plt.subplots(figsize=(10, 6))
         sns.barplot(x=bar_counts.values, y=bar_counts.index.astype(str), ax=axb)
         axb.set_title(f'Top values for {feature}')
@@ -141,25 +157,27 @@ def generate_feature_analysis(df, feature, target_feature):
     except Exception:
         images['bar_png'] = None
 
-    # Interactive Plotly plot: scatter for numeric, bar for categorical
+    # GRÁFICO INTERATIVO, PLOTLY
     interactive_html = None
     try:
         if pd.api.types.is_numeric_dtype(df[feature]) and pd.api.types.is_numeric_dtype(df[target_feature]):
+            # Para dados numéricos: cria scatter plot interativo
             fig_px = px.scatter(df, x=feature, y=target_feature, title=f'{feature} vs {target_feature}', hover_data=df.columns)
         else:
-            vc = df[feature].value_counts().nlargest(20)
+            # Para dados categóricos: cria gráfico de barras interativo
+            vc = df[feature].value_counts().nlargest(20) # Top 20 valores
             fig_px = px.bar(x=vc.index.astype(str), y=vc.values, labels={'x': feature, 'y': 'count'}, title=f'{feature} counts')
 
-        # Render as full HTML div (exclude the <html> wrapper)
+        # Converte para HTML
         interactive_html = pio.to_html(fig_px, full_html=False, include_plotlyjs='cdn')
     except Exception:
         interactive_html = None
 
     return {
-        'stats': stats,
-        'correlation': correlation,
-        'images': images,
-        'interactive_html': interactive_html
+        'stats': stats, # Estatísticas descritivas
+        'correlation': correlation, # Correlação com target
+        'images': images, # # Buffers das imagens
+        'interactive_html': interactive_html # # HTML do gráfico Plotly
     }
 
 
