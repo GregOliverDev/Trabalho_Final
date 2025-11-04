@@ -36,6 +36,7 @@ db.init_app(app)
 
 @app.template_filter('b64encode')
 def b64encode_filter(buffer):
+    # Converte buffer binário para string base64
     return base64.b64encode(buffer.getvalue()).decode('utf-8')
 
 
@@ -68,7 +69,8 @@ def view_analysis(analysis_id):
     
     if request.args.get('feature'):
         feature = request.args.get('feature')
-        feature_stats = generate_feature_analysis(df, feature, analysis.target_feature)
+        # carrega dados e gera gráficos
+        feature_stats = generate_feature_analysis(df, feature, analysis.target_feature)  
         
         # Log p debug
         try:
@@ -94,7 +96,7 @@ def generate_feature_analysis(df, feature, target_feature):
     images = {}
 
     # histograma e scatter
-    # Cria figura com 2 subplots lado a lado (1 linha, 2 colunas)
+    # Criação do gráfico em matplotlib/seaborn
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6))
     
     # HISTOGRAMA: mostra distribuição da feature
@@ -115,7 +117,7 @@ def generate_feature_analysis(df, feature, target_feature):
     plt.savefig(buf, format='png', bbox_inches='tight', dpi=120)
     plt.close(fig)
     buf.seek(0)
-    images['dist_scatter_png'] = buf
+    images['dist_scatter_png'] = buf # Armazena no dict para enviar ao template
 
     # GRÁFICO PIZZA: distribuição por categorias
     try:
