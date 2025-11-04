@@ -75,12 +75,38 @@
                         <div class="card mb-2">
                             <div class="card-body">
                                 <h6 class="card-subtitle mb-2">Distribuição (Histograma / Scatter)</h6>
-                                <a class="chart-link" href="data:image/png;base64,{{ feature_stats.images.dist_scatter_png|b64encode }}" target="_blank" rel="noopener noreferrer">
-                                    <img src="data:image/png;base64,{{ feature_stats.images.dist_scatter_png|b64encode }}" class="chart-thumb img-fluid" alt="Distribution and Scatter">
-                                </a>
+                                <img src="data:image/png;base64,{{ feature_stats.images.dist_scatter_png|b64encode }}" class="chart-thumb img-fluid" alt="Distribution and Scatter">
                             </div>
                         </div>
                     </div>
+
+                    <!-- Pie and Bar thumbnails (restored) -->
+                    <div class="col-md-6">
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2">Pizza</h6>
+                                {% if feature_stats.images.pie_png %}
+                                    <img src="data:image/png;base64,{{ feature_stats.images.pie_png|b64encode }}" class="chart-thumb img-fluid" alt="Pie Chart">
+                                {% else %}
+                                <p class="text-muted">N/A</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2">Bar</h6>
+                                {% if feature_stats.images.bar_png %}
+                                    <img src="data:image/png;base64,{{ feature_stats.images.bar_png|b64encode }}" class="chart-thumb img-fluid" alt="Bar Chart">
+                                {% else %}
+                                <p class="text-muted">N/A</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
                 {% else %}
                 <p class="text-muted">Selecione uma feature para ver os gráficos</p>

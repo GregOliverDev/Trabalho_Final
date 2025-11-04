@@ -1,10 +1,15 @@
-from flask import Flask, render_template, request, redirect, url_for, send_file, flash
+from flask import Flask, render_template, request, redirect, url_for, flash
+import logging
+logging.basicConfig(level=logging.INFO)
 import pandas as pd
-import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 import io
 import base64
+import plotly.express as px
+import plotly.io as pio
 
 from sklearn.inspection import permutation_importance
 from models.analysis import Analysis, db
@@ -12,7 +17,7 @@ import os
 from datetime import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn.preprocessing import LabelEncoder
+# (LabelEncoder not needed currently)
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -20,7 +25,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///analysis.db'
+# Use absolute path for the SQLite DB to avoid issues with relative paths
+db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'instance', 'analysis.db'))
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')
@@ -58,6 +65,15 @@ def view_analysis(analysis_id):
     if request.args.get('feature'):
         feature = request.args.get('feature')
         feature_stats = generate_feature_analysis(df, feature, analysis.target_feature)
+        # Log which images were generated (useful for debugging missing thumbnails)
+        try:
+            logging.info("feature=%s images keys=%s pie_none=%s bar_none=%s",
+                         feature,
+                         list(feature_stats['images'].keys()),
+                         feature_stats['images'].get('pie_png') is None,
+                         feature_stats['images'].get('bar_png') is None)
+        except Exception:
+            logging.exception('Failed to log feature image presence')
         return render_template('analysis.html', analysis=analysis, stats=stats, feature_stats=feature_stats)
     
     return render_template('analysis.html', analysis=analysis, stats=stats)
@@ -65,27 +81,81 @@ def view_analysis(analysis_id):
 
 def generate_feature_analysis(df, feature, target_feature):
     stats = df[feature].describe().to_dict()
-    
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
-    
+    correlation = None
+    images = {}
+
+    # Matplotlib histogram + scatter (if numeric)
+    # larger, higher-resolution distribution + scatter
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6))
     sns.histplot(data=df, x=feature, ax=ax1)
     ax1.set_title(f'Distribution of {feature}')
-    
-    correlation = None
+
     if pd.api.types.is_numeric_dtype(df[feature]) and pd.api.types.is_numeric_dtype(df[target_feature]):
         correlation = df[feature].corr(df[target_feature])
         sns.scatterplot(data=df, x=feature, y=target_feature, ax=ax2)
         ax2.set_title(f'{feature} vs {target_feature} (correlation: {correlation:.2f})')
-    
+    else:
+        ax2.axis('off')
+
     buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight')
+    plt.savefig(buf, format='png', bbox_inches='tight', dpi=120)
     plt.close(fig)
     buf.seek(0)
-    
+    images['dist_scatter_png'] = buf
+
+    # Pie chart for categorical distributions (or top categories of numeric binned)
+    try:
+        if pd.api.types.is_numeric_dtype(df[feature]):
+            # bin numeric into categories for pie
+            series_for_pie = pd.cut(df[feature], bins=5)
+        else:
+            series_for_pie = df[feature].astype(str)
+
+        pie_counts = series_for_pie.value_counts().nlargest(8)
+        fig2, axp = plt.subplots(figsize=(8, 8))
+        axp.pie(pie_counts.values, labels=pie_counts.index.astype(str), autopct='%1.1f%%', startangle=90)
+        axp.set_title(f'{feature} distribution')
+        buf2 = io.BytesIO()
+        plt.savefig(buf2, format='png', bbox_inches='tight', dpi=120)
+        plt.close(fig2)
+        buf2.seek(0)
+        images['pie_png'] = buf2
+    except Exception:
+        images['pie_png'] = None
+
+    # Bar chart (value counts) - top categories
+    try:
+        bar_counts = df[feature].value_counts().nlargest(10)
+        fig3, axb = plt.subplots(figsize=(10, 6))
+        sns.barplot(x=bar_counts.values, y=bar_counts.index.astype(str), ax=axb)
+        axb.set_title(f'Top values for {feature}')
+        buf3 = io.BytesIO()
+        plt.savefig(buf3, format='png', bbox_inches='tight', dpi=120)
+        plt.close(fig3)
+        buf3.seek(0)
+        images['bar_png'] = buf3
+    except Exception:
+        images['bar_png'] = None
+
+    # Interactive Plotly plot: scatter for numeric, bar for categorical
+    interactive_html = None
+    try:
+        if pd.api.types.is_numeric_dtype(df[feature]) and pd.api.types.is_numeric_dtype(df[target_feature]):
+            fig_px = px.scatter(df, x=feature, y=target_feature, title=f'{feature} vs {target_feature}', hover_data=df.columns)
+        else:
+            vc = df[feature].value_counts().nlargest(20)
+            fig_px = px.bar(x=vc.index.astype(str), y=vc.values, labels={'x': feature, 'y': 'count'}, title=f'{feature} counts')
+
+        # Render as full HTML div (exclude the <html> wrapper)
+        interactive_html = pio.to_html(fig_px, full_html=False, include_plotlyjs='cdn')
+    except Exception:
+        interactive_html = None
+
     return {
         'stats': stats,
         'correlation': correlation,
-        'plot': buf
+        'images': images,
+        'interactive_html': interactive_html
     }
 
 
@@ -243,4 +313,5 @@ def append_data(analysis_id):
     return redirect(url_for('view_analysis', analysis_id=analysis.id))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Run without the reloader/debugger to avoid multiple processes in background
+    app.run(debug=False, host='0.0.0.0')
