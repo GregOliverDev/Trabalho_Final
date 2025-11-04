@@ -2,15 +2,12 @@
 
 {% block content %}
 <div class="row mb-3 align-items-center">
-    <!-- Título e data -->
     <div class="col-md-8 col-12">
         <h1 class="h2 mb-1">{{ analysis.name }}</h1>
         <p class="text-muted mb-0">
             Criado em {{ analysis.creation_date.strftime('%Y-%m-%d %H:%M') }}
         </p>
     </div>
-
-    <!-- Formulário de upload -->
     <div class="col-md-4 col-12 mt-3 mt-md-0">
         <form method="post"
               action="{{ url_for('append_data', analysis_id=analysis.id) }}"
@@ -155,14 +152,21 @@
         </div>
     </div>
 </div>
+<div class="row g-4 mt-2">
+    <div class="col-12">
+        <div class="card stat-card">
+            <div class="card-body">
+                <h5 class="card-title">Análises Gerais</h5>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="row mt-4 mb-4">
     <div class="col-12">
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Machine Learning</h5>
-
-                <!-- Formulário de seleção de classificador / hiperparâmetros (GET) -->
                 <form action="{{ url_for('train_model', analysis_id=analysis.id) }}" method="get" class="row g-2">
                     <div class="col-md-4">
                         <label class="form-label">Classificador</label>
